@@ -3,41 +3,44 @@ import constant.PromptWord;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.TreeMap;
 
 public class DirItem {
 
-    byte[] srcLongNameItem;//长文件名目录项数组
-    byte[][] srclongNameGroup;//长文件名分组
+    private TreeMap<String, DirItem> subDirTree;//子目录树
 
-    byte[] srcShortNameItem;//短文件名目录项数组
+    private byte[] srcLongNameItem;//长文件名目录项数组
+    private byte[][] srclongNameGroup;//长文件名分组
 
-    byte[] srcDIR_Name;//文件名8字节，扩展名3字节,11(0x0b),短文件名
-    byte[] srcDIR_Attr;//文件属性,1
-    byte[] srcReserve;//保留位,10
-    byte[] srcDIR_WrtTime;//最后修改时间,2
-    byte[] srcDIR_WrtDate;//最后修改日期,2
-    byte[] srcDIR_FstClus;//此条目对应的开始簇号,2
-    byte[] srcDIR_FileSize;//文件大小byte,4
+    private byte[] srcShortNameItem;//短文件名目录项数组
 
-//    final static String rw_file="可读写普通文件";
+    private byte[] srcDIR_Name;//文件名8字节，扩展名3字节,11(0x0b),短文件名
+    private byte[] srcDIR_Attr;//文件属性,1
+    private byte[] srcReserve;//保留位,10
+    private byte[] srcDIR_WrtTime;//最后修改时间,2
+    private byte[] srcDIR_WrtDate;//最后修改日期,2
+    private byte[] srcDIR_FstClus;//此条目对应的开始簇号,2
+    private byte[] srcDIR_FileSize;//文件大小byte,4
 
     private String itemName;//文件名
     private String shortName;//短文件名
-    private boolean isDir;
+    private boolean isDir;//是否目录
     private int dirAttr;//文件属性,1
     private byte[] reserve;//保留位,10
     private Date dirWrtDate;//最后修改日期和时间
     private int dirFstClus;//此条目对应的开始簇号,2
     private long dirFileSize;//文件大小,4
 
-    //文件属性
-//  00000000：普通文件，可随意读写
-//  00000001：只读文件，不可改写
-//  00000010：隐藏文件，浏览文件时隐藏列表
-//  00000100：系统文件，删除的时候会有提示
-//  00001000：卷标，作为磁盘的卷标识符
-//  00010000：目录文件，此文件是一个子目录，它的内容就是此目录下的所有文件目录项
-//  00100000：归档文件（类似于压缩包被分包，但是只需打开其中一个其余的会自动解压）
+    /*
+        文件属性
+        00000000：普通文件，可随意读写
+        00000001：只读文件，不可改写
+        00000010：隐藏文件，浏览文件时隐藏列表
+        00000100：系统文件，删除的时候会有提示
+        00001000：卷标，作为磁盘的卷标识符
+        00010000：目录文件，此文件是一个子目录，它的内容就是此目录下的所有文件目录项
+        00100000：归档文件（类似于压缩包被分包，但是只需打开其中一个其余的会自动解压）
+     */
 
     public DirItem(byte[] shortItem) throws Exception {
         initData(shortItem, null);
@@ -76,13 +79,14 @@ public class DirItem {
             itemName = parseLongFileName(srcLongNameItem);
         } else {
             //对旧版系统的FAT12文件系统进行兼容
-            shortName = parseShortFileName(srcDIR_Name,srcReserve[0]);
+            shortName = parseShortFileName(srcDIR_Name, srcReserve[0]);
             itemName = shortName;
         }
         dirFstClus = (int) FileHandle.byteTransLong(srcDIR_FstClus);
         ;
         if ((srcDIR_Attr[0] & 0x10) == (byte) 0x10) {
             isDir = true;
+            this.subDirTree = null;
         } else {
             isDir = false;
         }
@@ -92,12 +96,12 @@ public class DirItem {
     /**
      * 解析短文件名，会根据传入标志判断文件名大小写
      *
-     * @param srcDIR_Name 文件名数组，11byte
+     * @param srcDIR_Name    文件名数组，11byte
      * @param srcReserveFlag 文件名大小写标志，即短文件名目录项第13位字节
      * @return
      * @throws UnsupportedEncodingException
      */
-    public static String parseShortFileName(byte[] srcDIR_Name,byte srcReserveFlag) throws UnsupportedEncodingException {
+    public static String parseShortFileName(byte[] srcDIR_Name, byte srcReserveFlag) throws UnsupportedEncodingException {
         String nameTemp = new String(srcDIR_Name, "ISO-8859-1");
         //去掉文件名的空白部分
         String fileName = nameTemp.substring(0, 8).trim();
@@ -110,24 +114,25 @@ public class DirItem {
              3. 此值为08H时，文件名小写而扩展名大写。
              4. 此值为00H时，文件名和扩展名都大写。
          */
-        switch (srcReserveFlag){
-            case (byte)0x18://文件名和扩展名都小写。
-                fileName=fileName.toLowerCase();
-                extendName=extendName.toLowerCase();
+        switch (srcReserveFlag) {
+            case (byte) 0x18://文件名和扩展名都小写。
+                fileName = fileName.toLowerCase();
+                extendName = extendName.toLowerCase();
                 break;
-            case (byte)0x10://文件名大写而扩展名小写。
-                fileName=fileName.toUpperCase();
-                extendName=extendName.toLowerCase();
+            case (byte) 0x10://文件名大写而扩展名小写。
+                fileName = fileName.toUpperCase();
+                extendName = extendName.toLowerCase();
                 break;
-            case (byte)0x08://文件名小写而扩展名大写。
-                fileName=fileName.toLowerCase();
-                extendName=extendName.toUpperCase();
+            case (byte) 0x08://文件名小写而扩展名大写。
+                fileName = fileName.toLowerCase();
+                extendName = extendName.toUpperCase();
                 break;
-            case (byte)0x00://文件名和扩展名都大写。
-                fileName=fileName.toUpperCase();
-                extendName=extendName.toUpperCase();
+            case (byte) 0x00://文件名和扩展名都大写。
+                fileName = fileName.toUpperCase();
+                extendName = extendName.toUpperCase();
                 break;
-            default:;//不做处理
+            default:
+                ;//不做处理
         }
         if (extendName.length() == 0) {
             nameTemp = fileName;
@@ -159,8 +164,6 @@ public class DirItem {
             throw new Exception(PromptWord.ERROR_2001);
         }
         byte check = srcLNI[0][13];
-//        StringBuilder sb = new StringBuilder();
-//        String s = null;
 
         byte[] p = new byte[13 * 2];
         byte[] reslut = new byte[13 * 2 * srcLNI.length];
@@ -175,7 +178,6 @@ public class DirItem {
             System.arraycopy(srcLNI[i], 1, p, 0, 10);
             System.arraycopy(srcLNI[i], 14, p, 10, 12);
             System.arraycopy(srcLNI[i], 28, p, 22, 4);
-            System.out.println("p=" + Arrays.toString(p));
             if (i == 0) {
                 for (int j = 0; j < p.length; j += 2) {
                     if (p[j] == 0 && p[j + 1] == 0) {
@@ -191,7 +193,6 @@ public class DirItem {
             }
             System.arraycopy(p, 0, reslut, 26 * (srcLNI.length - 1 - i), 26);
         }
-        System.out.println("reslut=" + Arrays.toString(reslut));
         return unicodeToChar(reslut);//将unicode编码转换成字符串
     }
 
@@ -209,21 +210,10 @@ public class DirItem {
             if (y == 0) {
                 break;
             }
-//            System.out.println("Unicode：" + y);
-//            System.out.println("字符：" + (char) y);
             sb.append((char) y);
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public String toString() {
-        return "DirItem{" +
-                "dirName='" + itemName + '\'' +
-                ", dirFstClus=" + dirFstClus +
-                ", dirFileSize=" + dirFileSize +
-                '}';
     }
 
     public String getItemName() {
@@ -236,6 +226,31 @@ public class DirItem {
 
     public long getDirFileSize() {
         return dirFileSize;
+    }
+
+    public byte[] getSrcDIR_FstClus() {
+        return srcDIR_FstClus;
+    }
+
+    public boolean isDir() {
+        return isDir;
+    }
+
+    public TreeMap<String, DirItem> getSubDirTree() {
+        return subDirTree;
+    }
+
+    public void setSubDirTree(TreeMap<String, DirItem> subDirTree) {
+        this.subDirTree = subDirTree;
+    }
+
+    @Override
+    public String toString() {
+        return "DirItem{" +
+                "itemName='" + itemName + '\'' +
+                ", dirFstClus=" + dirFstClus +
+                ", dirFileSize=" + dirFileSize +
+                '}';
     }
 }
 

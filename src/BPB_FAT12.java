@@ -137,13 +137,14 @@ public class BPB_FAT12 {
                 0x00,                                               //local=37,length=1,未使用(保留位),0
                 0x29,                                               //local=38,length=1,扩展引导标记,0x29
                 0x00, 0x00, 0x00, 0x00,                             //local=39,length=4,卷序列号,0(应由操作系统生成的唯一值)
-//                65, 98, 98, 98, 98, 98, 98, 98, 98, 98, 98,          //local=43,length=11,卷标,'OrangeS0.02'
                 'I', 'm', 'g', 'E', 'd', 'i', 't', '0', '.', '0', '1',          //local=43,length=11,卷标,'OrangeS0.02'
                 'F', 'A', 'T', '1', '2', ' ', ' ', ' ',                    //local=54,length=8,文件系统类型,'FAT12'
         };
         byte[] init_bootSector = new byte[512];
         System.arraycopy(headData, 0, init_bootSector, 0, 62);
-//        System.arraycopy(bootCode,0,bootSector,62,448);//local=62,length=448,引导代码、数据及其他填充字符等,引导代码(剩余空间被0填充)
+
+        //local=62,length=448,引导代码、数据及其他填充字符等,引导代码(剩余空间被0填充)
+
         //local=510,length=2,结束标志,0xAA55 (操作系统以这个标志识别是否为可引导扇区)
         init_bootSector[510] = 0x55;
         init_bootSector[511] = (byte) 0xAA;
