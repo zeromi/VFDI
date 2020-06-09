@@ -43,7 +43,6 @@ public class Start {
         imgEdit = new ImgEdit(imgFileFullPath);
         rootDirTree = imgEdit.getRootDirTree();
 
-//        dirTree = rootDirTree;
         nowDirTree = rootDirTree;
         dirPath = new ArrayList<>();
         dirPath.clone();
@@ -113,7 +112,7 @@ public class Start {
                     this.displayDirList(nowDirTree);
                     break;
                 case PromptWord.CMD_CD:
-                    //列出当前路径的目录下的文件列表
+                    //切换目录
                     this.changeDiretory(cmdParse);
                     break;
                 case PromptWord.CMD_OUT:
@@ -133,10 +132,10 @@ public class Start {
                 case PromptWord.CMD_SELECT:
                     this.selectImgFile(cmdParse);
                     break;
-                case PromptWord.CMD_CF:
+                case PromptWord.CMD_CF://创建一个1.44M虚拟磁盘文件
                     this.createImgFile(cmdParse);
                     break;
-                case PromptWord.CMD_FORMAT:
+                case PromptWord.CMD_FORMAT://格式化虚拟磁盘
                     this.formatImgFile(cmdParse);
                     break;
                 case PromptWord.CMD_EXIT:
@@ -256,7 +255,7 @@ public class Start {
 
         boolean pathCheck = true;//路径有效性检查，ture表示有效
 
-        String[] pathSet = path.split("/");
+        String[] pathSet = path.split(File.separator);
         //处理单条或多条路径
         for (int i = 0; i < pathSet.length; i++) {
             if (nowDirTree.get(pathSet[i]) == null) {
