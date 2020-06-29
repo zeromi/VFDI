@@ -1,5 +1,5 @@
 # VFDI
- virtualFloppyDiskImage，一个可以创建虚拟软盘，并可以对其进行读写的虚拟软盘编辑程序。
+ VirtualFloppyDiskImage，一个可以创建虚拟软盘，并可以对其进行读写的虚拟软盘编辑程序。
 ## 功能规划
 
     1.可生成1.44M虚拟软盘文件
